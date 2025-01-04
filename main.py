@@ -92,6 +92,7 @@ def job():
     ti = crawl_webpage(url)
     res = parse_usd(ti, tme)
     send_msg("外汇每日行情", res)
+    logger.info(tme + "任务结束，已发送：" + res)
 
 
 if __name__ == "__main__":
@@ -101,3 +102,4 @@ if __name__ == "__main__":
     while True:
         schedule.run_pending()
         time.sleep(60)
+    
