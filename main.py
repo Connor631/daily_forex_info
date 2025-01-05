@@ -71,6 +71,7 @@ def parse_usd(soup, formatted_time):
     best_xh_sell_bank = best_xh_sell.iloc[:,-1].to_list()
     best_xh_buy_bank = best_xh_buy.iloc[:,-1].to_list()
     out = f"截至{formatted_time},美元主要银行最佳现汇买入银行为{best_xh_buy_bank}，值为{xh_buy_max}；最佳现汇卖出银行为{best_xh_sell_bank}，值为{xh_sell_min}。"
+    logger.info(formatted_time + "数据获取完成：" + out)
     return out
 
 

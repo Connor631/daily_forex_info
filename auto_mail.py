@@ -3,6 +3,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import json
 import os
+from loguru import logger
 
 
 class auto_mail(object):
@@ -36,10 +37,15 @@ class auto_mail(object):
         password = self.password
 
         # 通过163邮箱的SMTP服务器发送邮件
-        with smtplib.SMTP("smtp.163.com", 25) as server:
-            server.starttls()
-            server.login(username, password)
-            server.sendmail(sender, receiver, message.as_string())
+        try:
+            with smtplib.SMTP_SSL("smtp.163.com", 465, timeout=60) as server:
+                server.login(username, password)
+                server.sendmail(sender, receiver, message.as_string())
+                logger.info("邮件发送成功")
+        except smtplib.SMTPException as e:
+            logger.error(f"邮件发送失败： {e}")
+        except TimeoutError as e:
+            logger.error(f"连接超时，{e}")
 
 
 if __name__ == '__main__':
