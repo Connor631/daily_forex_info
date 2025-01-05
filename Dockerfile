@@ -8,7 +8,7 @@ WORKDIR /app
 COPY . /app
 
 # 安装依赖包
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 
 # 复制配置文件
 COPY config.json /app/config.json
