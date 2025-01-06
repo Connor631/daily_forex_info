@@ -9,6 +9,8 @@ from auto_mail import auto_mail
 import os
 import schedule
 import pytz
+from datetime import datetime
+
 
 # 设置时区为北京时间
 tz = pytz.timezone('Asia/Shanghai')
@@ -89,7 +91,7 @@ def send_msg(obj, msg):
 def job():
     # 获取时间
     ts = int(time.time() * 1000)
-    tme = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    tme = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
     logger.info(tme + "任务开始运行")
     # 主程序
     url = f"https://vip.stock.finance.sina.com.cn/forex/api/openapi.php/ForexService.getBankForex?callback=getAllBankForex&_={ts}"
@@ -103,7 +105,7 @@ def job():
 
 if __name__ == "__main__":
     logger.add("file_1.log", rotation="50 MB")    # Automatically rotate too big file
-    schedule.every().day.at("15:15").do(job)
+    schedule.every().day.at("15:05").do(job)
     job()
     while True:
         schedule.run_pending()
