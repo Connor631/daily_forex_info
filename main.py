@@ -8,7 +8,10 @@ import pandas as pd
 from auto_mail import auto_mail
 import os
 import schedule
+import pytz
 
+# 设置时区为北京时间
+tz = pytz.timezone('Asia/Shanghai')
 
 BANK_DIC = {
     "icbc": "中国工商银行"
@@ -93,7 +96,9 @@ def job():
     ti = crawl_webpage(url)
     res = parse_usd(ti, tme)
     send_msg("外汇每日行情", res)
-    logger.info(tme + "任务结束，已发送：" + res)
+    # 打印下次运行时间
+    next_run_time = schedule.next_run().astimezone(tz).strftime("%Y-%m-%d %H:%M:%S")
+    logger.info(f"本次运行结束，下次运行时间：{next_run_time}")
 
 
 if __name__ == "__main__":
