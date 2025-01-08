@@ -4,6 +4,7 @@ from email.mime.multipart import MIMEMultipart
 import json
 import os
 from loguru import logger
+from sql_utils import sql_utils
 
 
 class auto_mail(object):
@@ -48,9 +49,20 @@ class auto_mail(object):
             logger.error(f"连接超时，{e}")
 
 
+def get_forex():
+    config_path = "config.json"
+    sql_util = sql_utils(config_path)
+    sql = "SELECT * FROM t_forex_data_index_sina ORDER BY data_dt, data_tm DESC LIMIT 1"
+    best_res_dict = sql_util.read_sql(database="forex", sql=sql, format='dict')
+    best_res = best_res_dict[0]
+    msg = f"截至{best_res["data_dt"]}日{best_res["data_tm"]},美元主要银行最佳现汇买入银行为{best_res["best_xh_buy_bank"]}，值为{best_res["best_xh_buy"]}；最佳现汇卖出银行为{best_res["best_xh_sell_bank"]}，值为{best_res["best_xh_sell"]}。"
+    return msg
+
+
 if __name__ == '__main__':
-    # current_file_path = os.path.abspath(__file__)
-    # config_path = os.path.join(os.path.dirname(current_file_path), "config.json")
-    # am = auto_mail(config_path)
-    # am.send_email_msg("测试邮件", "这是一封测试邮件2")
-    pass
+    current_file_path = os.path.abspath(__file__)
+    config_path = os.path.join(os.path.dirname(current_file_path), "config.json")
+    am = auto_mail(config_path)
+    obj = "daily forex data"
+    msg = get_forex()
+    am.send_email_msg(obj, msg)
