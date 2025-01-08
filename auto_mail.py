@@ -2,7 +2,8 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import json
-import os
+import schedule
+import time
 from loguru import logger
 from sql_utils import sql_utils
 
@@ -55,14 +56,31 @@ def get_forex():
     sql = "SELECT * FROM t_forex_data_index_sina ORDER BY data_dt, data_tm DESC LIMIT 1"
     best_res_dict = sql_util.read_sql(database="forex", sql=sql, format='dict')
     best_res = best_res_dict[0]
-    msg = f"截至{best_res["data_dt"]}日{best_res["data_tm"]},美元主要银行最佳现汇买入银行为{best_res["best_xh_buy_bank"]}，值为{best_res["best_xh_buy"]}；最佳现汇卖出银行为{best_res["best_xh_sell_bank"]}，值为{best_res["best_xh_sell"]}。"
+    dt = best_res["data_dt"]
+    tm = best_res["data_tm"]
+    best_xh_buy_bank = best_res["best_xh_buy_bank"]
+    best_xh_buy = best_res["best_xh_buy"]
+    best_xh_sell_bank = best_res["best_xh_sell_bank"]
+    best_xh_sell = best_res["best_xh_sell"]
+    msg = f"截至{dt}日{tm},美元主要银行最佳现汇买入银行为{best_xh_buy_bank}，值为{best_xh_buy}；最佳现汇卖出银行为{best_xh_sell_bank}，值为{best_xh_sell}。"
     return msg
 
 
-if __name__ == '__main__':
-    current_file_path = os.path.abspath(__file__)
-    config_path = os.path.join(os.path.dirname(current_file_path), "config.json")
+def job():
+    config_path = "config.json"
     am = auto_mail(config_path)
     obj = "daily forex data"
     msg = get_forex()
     am.send_email_msg(obj, msg)
+    # 打印下次运行时间
+    next_run_time = schedule.next_run().astimezone().strftime("%Y-%m-%d %H:%M:%S")
+    logger.info(f"本次运行结束，下次运行时间：{next_run_time}")
+
+
+if __name__ == '__main__':
+    logger.add("file_mail.log", rotation="50 MB")
+    schedule.every().day.at("16:05").do(job)
+    job()  # 立刻运行一次
+    while True:
+        schedule.run_pending()
+        time.sleep(60)
