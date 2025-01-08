@@ -24,8 +24,11 @@ class sql_utils():
 
     def get_sqlalchemy_engine(self, database):
         password = quote_plus(self.config['sql_config']['pwd'])  # 解决密码中特殊符号问题
+        acct = self.config['sql_config']['account']
+        host = self.config['sql_config']['host']
+        port = self.config['sql_config']['port']
         return create_engine(
-            f"mysql+pymysql://{self.config['sql_config']['account']}:{password}@{self.config['sql_config']['host']}:{self.config['sql_config']['port']}/{database}"
+            f"mysql+pymysql://{acct}:{password}@{host}:{port}/{database}"
         )
 
     @logger.catch
