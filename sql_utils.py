@@ -62,20 +62,22 @@ class sql_utils():
             if col not in df.columns:
                 df[col] = None
         try:
-            df.to_sql(table_name, con=engine, if_exists='append', index=False)
+            # 使用 engine.connect() 的上下文管理器来确保连接在使用后关闭
+            with engine.connect() as connection:
+                df.to_sql(name=table_name, con=connection, if_exists='append', index=False)
             logger.info(f"DataFrame successfully written to table {table_name}")
         except Exception as e:
             logger.error(f"Failed to write DataFrame to table {table_name}: {e}")
 
 
 if __name__ == "__main__":
-    config_path = "config.json"
-    sql_util = sql_utils(config_path)
+    # config_path = "config.json"
+    # sql_util = sql_utils(config_path)
 
-    tag = "forex_sina"
-    sql = f"SELECT * FROM t_forex_bat_ctl WHERE uni_tag='{tag}'"
-    dic = sql_util.read_sql(database="forex",sql=sql, format="dict")
-    forex_sina_config = dic[0]
+    # tag = "forex_sina"
+    # sql = f"SELECT * FROM t_forex_bat_ctl WHERE uni_tag='{tag}'"
+    # dic = sql_util.read_sql(database="forex",sql=sql, format="dict")
+    # forex_sina_config = dic[0]
 
     # conn = sql_util.get_sqlalchemy_engine("forex")
     # logger.info(conn)
@@ -91,11 +93,12 @@ if __name__ == "__main__":
     # logger.info(df)
     # sql_util.df_write_table(df, "t_forex_data_sina", "forex")
 
-    if forex_sina_config["bat_stat"] == "active":
-        url = forex_sina_config["url"]
-        # 获取时间
-        res1 = int(time.time() * 1000)
-        url = url.replace("{res1}", str(res1))
-        logger.info(url)
-    else:
-        logger.warning(forex_sina_config["uni_tag"] + "该任务已被禁用")
+    # if forex_sina_config["bat_stat"] == "active":
+    #     url = forex_sina_config["url"]
+    #     # 获取时间
+    #     res1 = int(time.time() * 1000)
+    #     url = url.replace("{res1}", str(res1))
+    #     logger.info(url)
+    # else:
+    #     logger.warning(forex_sina_config["uni_tag"] + "该任务已被禁用")
+    pass
