@@ -53,7 +53,7 @@ class auto_mail(object):
 def get_forex():
     config_path = "config.json"
     sql_util = sql_utils(config_path)
-    sql = "SELECT * FROM t_forex_data_index_sina ORDER BY data_dt, data_tm DESC LIMIT 1"
+    sql = "SELECT * FROM t_forex_data_index_sina ORDER BY data_dt DESC, data_tm DESC LIMIT 1"
     best_res_dict = sql_util.read_sql(database="forex", sql=sql, format='dict')
     best_res = best_res_dict[0]
     dt = best_res["data_dt"]
