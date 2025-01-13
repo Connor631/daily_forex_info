@@ -9,18 +9,23 @@ from sql_utils import sql_utils
 
 
 class auto_mail(object):
-    def __init__(self, config_path):
-        with open(config_path, "r", encoding="utf8") as fp:
-            config = json.load(fp)
-        self.sender = config["mail_config"]["sender"]
-        self.receiver = config["mail_config"]["recipient"]
-        self.password = config["mail_config"]["password"]
+    def __init__(self, sender, password, receivers, multiple_receiver=False):
+        self.sender = sender
+        self.receivers = receivers
+        self.password = password
+        self.multiple_receiver = multiple_receiver
 
     def send_email_msg(self, subject, msg):
+        if self.multiple_receiver:
+            self.send_email_msg_multiple(subject, msg)
+        else:
+            self.send_email_msg_single(subject, msg, self.receivers)
+
+    def send_email_msg_single(self, subject, msg, sing_receiver=None):
         # 邮件发送者
         sender = self.sender
         # 邮件接收者
-        receiver = self.receiver
+        receiver = sing_receiver
         # 邮件主题
         subject = subject
         # 邮件内容
@@ -49,13 +54,14 @@ class auto_mail(object):
         except TimeoutError as e:
             logger.error(f"连接超时，{e}")
 
+    def send_email_msg_multiple(self, subject, msg):
+        for receiver in self.receivers.split(","):
+            self.send_email_msg_single(subject, msg, receiver)
+    
 
-def get_forex():
-    config_path = "config.json"
-    sql_util = sql_utils(config_path)
+def get_forex(sql_util):
     sql = "SELECT * FROM t_forex_data_index_sina ORDER BY data_dt DESC, data_tm DESC LIMIT 1"
-    best_res_dict = sql_util.read_sql(database="forex", sql=sql, format='dict')
-    best_res = best_res_dict[0]
+    best_res = sql_util.read_sql(database="forex", sql=sql, format='dict')
     dt = best_res["data_dt"]
     tm = best_res["data_tm"]
     best_xh_buy_bank = best_res["best_xh_buy_bank"]
@@ -68,9 +74,21 @@ def get_forex():
 
 def job():
     config_path = "config.json"
-    am = auto_mail(config_path)
+    sql_util = sql_utils(config_path)
+    sql_config_dict = sql_util.read_sql(database="forex", sql="SELECT * FROM t_forex_bat_ctl WHERE uni_tag='forex_sina'", format="dict")
+    sender = sql_config_dict["mail_sender"]
+    password = sql_config_dict["mail_pwd"]
+    receivers = sql_config_dict["mail_recpt"]
+    revs = receivers.split(",")
+    if len(revs) > 1:
+        am = auto_mail(sender, password, receivers, multiple_receiver=True)
+    elif len(revs) == 0:
+        logger.error("收件人为空，请检查配置文件")
+        return
+    else:
+        am = auto_mail(sender, password, receivers)
     obj = "daily forex data"
-    msg = get_forex()
+    msg = get_forex(sql_util)
     am.send_email_msg(obj, msg)
     # 打印下次运行时间
     next_run_time = schedule.next_run().astimezone().strftime("%Y-%m-%d %H:%M:%S")

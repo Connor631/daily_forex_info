@@ -43,7 +43,7 @@ class sql_utils():
                     return pd.DataFrame(result, columns=columns)
                 elif format == "dict":
                     result_dict = [dict(zip(columns, row)) for row in result]
-                    return result_dict
+                    return result_dict[0] if len(result_dict) == 1 else result_dict
                 else:
                     return result
         finally:

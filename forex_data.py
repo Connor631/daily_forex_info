@@ -112,8 +112,7 @@ def forex_data_main():
     # 读取配置信息，启用哪些项目
     tag = "forex_sina"
     sql = f"SELECT * FROM t_forex_bat_ctl WHERE uni_tag='{tag}'"
-    dic = sql_util.read_sql(database="forex",sql=sql, format="dict")
-    forex_sina_config = dic[0]
+    forex_sina_config = sql_util.read_sql(database="forex",sql=sql, format="dict")
     if forex_sina_config["bat_stat"] == "active":
         # 主项目
         url_raw = forex_sina_config["url"]
