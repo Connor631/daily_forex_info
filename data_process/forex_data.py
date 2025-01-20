@@ -5,13 +5,9 @@ import re
 import json
 from loguru import logger
 import pandas as pd
-from auto_mail import auto_mail
-from sql_utils import sql_utils
-import os
-import schedule
+
 import pytz
 from datetime import datetime
-import pymysql
 
 
 # 设置时区为北京时间
@@ -103,14 +99,11 @@ def wrap_forex(df, formatted_time, curr = "USD"):
 
 
 @logger.catch
-def forex_data_main():
+def forex_data_main(sql_util):
     # 获取时间
     tme = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
     logger.info(tme + "任务开始运行")
-    # 后台数据表控制
-    config_path = "config.json"
-    sql_util = sql_utils(config_path)
-    # 读取配置信息，启用哪些项目
+    # 读取配置信息
     tag = "forex_sina"
     sql = f"SELECT * FROM t_forex_bat_ctl WHERE uni_tag='{tag}'"
     forex_sina_config = sql_util.read_sql(database="forex",sql=sql, format="dict")

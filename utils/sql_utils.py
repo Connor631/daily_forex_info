@@ -3,8 +3,6 @@ from loguru import logger
 from sqlalchemy import create_engine, text
 import pandas as pd
 import json
-import time
-from datetime import datetime
 from urllib.parse import quote_plus
 
 
@@ -71,34 +69,4 @@ class sql_utils():
 
 
 if __name__ == "__main__":
-    # config_path = "config.json"
-    # sql_util = sql_utils(config_path)
-
-    # tag = "forex_sina"
-    # sql = f"SELECT * FROM t_forex_bat_ctl WHERE uni_tag='{tag}'"
-    # dic = sql_util.read_sql(database="forex",sql=sql, format="dict")
-    # forex_sina_config = dic[0]
-
-    # conn = sql_util.get_sqlalchemy_engine("forex")
-    # logger.info(conn)
-    # df = pd.DataFrame({
-    #     "bank": ["中国银行", "中国银行", "中国银行"],
-    #     "xh_sell_price": [6.5, 6.4, 6.3],
-    #     "xh_buy_price": [6.2, 6.1, 6.0]
-    # })
-    # date_time_obj = pd.to_datetime(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    # df["data_dt"] = date_time_obj.date()
-    # df["data_tm"] = date_time_obj.time()
-    # df["currency"] = "test"
-    # logger.info(df)
-    # sql_util.df_write_table(df, "t_forex_data_sina", "forex")
-
-    # if forex_sina_config["bat_stat"] == "active":
-    #     url = forex_sina_config["url"]
-    #     # 获取时间
-    #     res1 = int(time.time() * 1000)
-    #     url = url.replace("{res1}", str(res1))
-    #     logger.info(url)
-    # else:
-    #     logger.warning(forex_sina_config["uni_tag"] + "该任务已被禁用")
     pass
