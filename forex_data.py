@@ -47,11 +47,12 @@ def extract_and_parse_json(text):
         logger.error('未找到getAllBankForex函数及其中的JSON数据')
 
 
-def crawl_webpage(url):
+def crawl_webpage(url, headers=None):
     try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
+        if headers is None:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
         # 发送HTTP请求获取网页内容
         response = requests.get(url, headers=headers)
         # 检查请求是否成功
