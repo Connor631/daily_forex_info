@@ -1,13 +1,11 @@
-import requests
-from bs4 import BeautifulSoup
 import time
-import re
-import json
 from loguru import logger
 import pandas as pd
-
+from utils.web_utils import crawl_webpage
 import pytz
 from datetime import datetime
+import re
+import json
 
 
 # 设置时区为北京时间
@@ -26,44 +24,27 @@ BANK_DIC = {
     ,"ecitic": "中信银行"
 }
 
-def extract_and_parse_json(text):
-    # 使用正则表达式提取getAllBankForex函数中的JSON部分
-    match = re.search(r'getAllBankForex\((.*?)\)', text)
+
+@logger.catch
+def extract_and_parse_json(text, reg=None):
+    # 使用正则表达式提取reg中的JSON部分
+    match = re.search(reg, text)
     if match:
         json_str = match.group(1)
-        try:
-            # 解析JSON字符串
-            data = json.loads(json_str)
-            # 获取result对应的JSON
-            result = data.get('result', {})
-            return result
-        except json.JSONDecodeError as e:
-            logger.error(f'解析JSON时出错: {e}')
+        # 解析JSON字符串
+        data = json.loads(json_str)
+        return data
     else:
-        logger.error('未找到getAllBankForex函数及其中的JSON数据')
-
-
-def crawl_webpage(url, headers=None):
-    try:
-        if headers is None:
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
-        # 发送HTTP请求获取网页内容
-        response = requests.get(url, headers=headers)
-        # 检查请求是否成功
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.content, 'html.parser')
-            return soup
-        else:
-            logger.error(f"请求失败，状态码：{response.status_code}")
-    except requests.RequestException as e:
-        logger.error(f"请求发生异常：{e}")
+        logger.error(f'未找到{reg}其中的JSON数据')
 
 
 @logger.catch
 def parse_curr(soup, formatted_time, curr = "USD"):
-    result_json = extract_and_parse_json(soup.prettify())
+    # 解析出对应的JSON
+    reg = r'getAllBankForex\((.*?)\)'
+    result_json_raw = extract_and_parse_json(soup.prettify(), reg)
+    result_json = result_json_raw.get('result', {})
+    # 转化成df
     df_curr = pd.json_normalize(result_json["data"]["bank"][curr])
     df_curr["bank_chi"] = df_curr["bank"].map(BANK_DIC)
     df_curr["currency"] = curr
@@ -73,6 +54,7 @@ def parse_curr(soup, formatted_time, curr = "USD"):
     # 替换所有字符为 "--" 的值为空值
     df_curr.replace("--", pd.NA, inplace=True)
     return df_curr
+
 
 @logger.catch
 def wrap_forex(df, formatted_time, curr = "USD"):
@@ -99,29 +81,21 @@ def wrap_forex(df, formatted_time, curr = "USD"):
 
 
 @logger.catch
-def forex_data_main(sql_util):
+def forex_data_main(sql_util, forex_sina_config):
     # 获取时间
     tme = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
     logger.info(tme + "任务开始运行")
-    # 读取配置信息
-    tag = "forex_sina"
-    sql = f"SELECT * FROM t_forex_bat_ctl WHERE uni_tag='{tag}'"
-    forex_sina_config = sql_util.read_sql(database="forex",sql=sql, format="dict")
-    if forex_sina_config["bat_stat"] == "active":
-        # 主项目
-        url_raw = forex_sina_config["url"]
-        # 获取时间
-        res1 = int(time.time() * 1000)
-        url = url_raw.replace("{res1}", str(res1))  # 重组url
-        resp = crawl_webpage(url)
-        # 外汇原始报价数据
-        forex_raw = parse_curr(resp, tme)
-        sql_util.df_write_table(forex_raw, table_name="t_forex_data_sina", database="forex")
-        # 外汇报价指标数据
-        forex_index = wrap_forex(forex_raw, tme)
-        sql_util.df_write_table(forex_index, table_name="t_forex_data_index_sina", database="forex")
-    else:
-        logger.warning(forex_sina_config["uni_tag"] + "该任务已被禁用")
+    # url加工
+    url_raw = forex_sina_config["url"]
+    res1 = int(time.time() * 1000)
+    url = url_raw.replace("{res1}", str(res1))
+    resp = crawl_webpage(url)
+    # 外汇原始报价数据
+    forex_raw = parse_curr(resp, tme)
+    sql_util.df_write_table(forex_raw, table_name="t_forex_data_sina", database="forex")
+    # 外汇报价指标数据
+    forex_index = wrap_forex(forex_raw, tme)
+    sql_util.df_write_table(forex_index, table_name="t_forex_data_index_sina", database="forex")
 
 
 if __name__ == "__main__":

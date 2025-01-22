@@ -59,10 +59,12 @@ class sql_utils():
         for col in table_columns:
             if col not in df.columns:
                 df[col] = None
+        # 保留表中存在的列
+        df_clean = df[table_columns]
         try:
             # 使用 engine.connect() 的上下文管理器来确保连接在使用后关闭
             with engine.connect() as connection:
-                df.to_sql(name=table_name, con=connection, if_exists='append', index=False)
+                df_clean.to_sql(name=table_name, con=connection, if_exists='append', index=False)
             logger.info(f"DataFrame successfully written to table {table_name}")
         except Exception as e:
             logger.error(f"Failed to write DataFrame to table {table_name}: {e}")
