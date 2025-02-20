@@ -1,5 +1,6 @@
 import smtplib
 from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from loguru import logger
 
@@ -24,16 +25,23 @@ class auto_mail(object):
         receiver = sing_receiver
         # 邮件主题
         subject = subject
-        # 邮件内容
-        body = msg
 
         # 创建一个 multipart message
         message = MIMEMultipart()
         message["From"] = sender
         message["To"] = receiver
         message["Subject"] = subject
-        # 添加邮件内容
-        message.attach(MIMEText(body, "html"))
+
+        # 邮件正文内容
+        html_content = msg["html"]
+        img_bytes = msg["img_bytes"]
+        # HTML
+        message.attach(MIMEText(html_content, 'html'))
+        # 图片
+        img = MIMEImage(img_bytes.read(), 'png')
+        # 这里如果不设置Content-ID，而设置为attachment相关头部信息，就会作为附件
+        img.add_header('Content-Disposition', f'attachment; filename="plot_image.png"')
+        message.attach(img)
 
         # 163邮箱的授权码信息
         username = sender
@@ -49,6 +57,9 @@ class auto_mail(object):
             logger.error(f"邮件发送失败： {e}")
         except TimeoutError as e:
             logger.error(f"连接超时，{e}")
+        finally:
+            # 关闭BytesIO对象
+            img_bytes.close()
 
     def send_email_msg_multiple(self, subject, msg):
         for receiver in self.receivers.split(","):
