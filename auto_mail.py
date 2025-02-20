@@ -11,12 +11,6 @@ import os
 from datetime import datetime
 
 
-# 设置中文字体为黑体
-plt.rcParams['font.sans-serif'] = ['SimHei']
-# 解决负号显示问题
-plt.rcParams['axes.unicode_minus'] = False
-
-
 def get_forex(sql_util):
     sql = "SELECT * FROM t_forex_data_index_sina"
     best_res = sql_util.read_sql(database="forex", sql=sql, format='df')
@@ -35,13 +29,13 @@ def get_forex(sql_util):
         美元主要银行最佳现汇买入银行为{best_xh_buy_bank}, 值为{best_xh_buy}; 最佳现汇卖出银行为{best_xh_sell_bank}, 值为{best_xh_sell}.
         """
     # 构建图像
-    plt.plot(df_day['create_date'], df_day['best_xh_buy'], label='最佳现汇买入')
-    plt.plot(df_day['create_date'], df_day['best_xh_sell'], label='最佳现汇卖出')
+    plt.plot(df_day['create_date'], df_day['best_xh_buy'], label='best_xh_buy')
+    plt.plot(df_day['create_date'], df_day['best_xh_sell'], label='best_xh_sell')
     # 设置图表标题和坐标轴标签
-    plt.title('最佳现汇买入/卖出价')
-    plt.xlabel('日期')
-    plt.ylabel('汇率')
-    plt.xticks(rotation=30)
+    plt.title('Best xh buy and sell')
+    plt.xlabel('Date')
+    plt.ylabel('Forex')
+    plt.xticks(rotation=20)
     # 创建一个BytesIO对象
     imgdata = io.BytesIO()
     # 将图形保存到BytesIO对象中，格式为png
