@@ -6,6 +6,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 import os
 from datetime import datetime
+from pathlib import Path
 
 
 @logger.catch
@@ -34,6 +35,7 @@ def job_stock(sql_util, config):
 
 
 if __name__ == "__main__":
+    logger.info("start.....")
     # 检查并创建 logs 文件夹
     log_dir = "./logs"
     if not os.path.exists(log_dir):
@@ -41,8 +43,9 @@ if __name__ == "__main__":
     logger.add(os.path.join(log_dir, "file_data.log"), rotation="50 MB")
 
     # 后台数据表控制
-    config_path = "config.json"
-    sql_util = sql_utils(config_path)
+    script_path = Path(__file__).resolve().parent
+    data_file_path = script_path / 'config.json'
+    sql_util = sql_utils(data_file_path)
     # 读取配置
     stock_tag, forex_tag = "stock_sina", "forex_sina"
     stock_sql = f"SELECT * FROM t_task_bat_ctl WHERE uni_tag='{stock_tag}'"
