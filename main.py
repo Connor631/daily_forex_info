@@ -7,6 +7,8 @@ from apscheduler.triggers.cron import CronTrigger
 import os
 from datetime import datetime
 from pathlib import Path
+import argparse
+
 
 
 @logger.catch
@@ -36,6 +38,12 @@ def job_stock(sql_util, config):
 
 if __name__ == "__main__":
     logger.info("start.....")
+    # 创建解析器对象
+    parser = argparse.ArgumentParser(description="数据服务控制。")
+    parser.add_argument('--forex', type=int, default=1, help='外汇数据任务是否启动')
+    parser.add_argument('--stock', type=int, default=1, help='股市数据任务是否启动')
+    args = parser.parse_args()
+
     # 检查并创建 logs 文件夹
     log_dir = "./logs"
     if not os.path.exists(log_dir):
@@ -46,27 +54,34 @@ if __name__ == "__main__":
     script_path = Path(__file__).resolve().parent
     data_file_path = script_path / 'config.json'
     sql_util = sql_utils(data_file_path)
-    # 读取配置
-    stock_tag, forex_tag = "stock_sina", "forex_sina"
-    stock_sql = f"SELECT * FROM t_task_bat_ctl WHERE uni_tag='{stock_tag}'"
-    forex_sql = f"SELECT * FROM t_task_bat_ctl WHERE uni_tag='{forex_tag}'"
-    stock_sina_config = sql_util.read_sql(database="forex",sql=stock_sql, format="dict")
-    forex_sina_config = sql_util.read_sql(database="forex",sql=forex_sql, format="dict")
-
-    # cron表达式
-    stock_cron = stock_sina_config["sched_tm"]
-    forex_cron = forex_sina_config["sched_tm"]
 
     # 使用cron方式启动任务
     scheduler = BlockingScheduler()
 
-    # 添加任务
-    scheduler.add_job(job_forex, CronTrigger.from_crontab(forex_cron), kwargs={'sql_util': sql_util, 'config': stock_sina_config}, id='forex_job')
-    scheduler.add_job(job_stock, CronTrigger.from_crontab(stock_cron), kwargs={'sql_util': sql_util, 'config': forex_sina_config}, id='stock_job')
+    if args.forex:
+        forex_tag = "forex_sina"
+        forex_sql = f"SELECT * FROM t_task_bat_ctl WHERE uni_tag='{forex_tag}'"
+        forex_sina_config = sql_util.read_sql(database="forex",sql=forex_sql, format="dict")
+        # cron表达式
+        forex_cron = forex_sina_config["sched_tm"]
+        scheduler.add_job(job_forex, CronTrigger.from_crontab(forex_cron), kwargs={'sql_util': sql_util, 'config': forex_sina_config}, id='forex_job')
+        job_forex(sql_util, forex_sina_config)
+    else:
+        logger.info("外汇数据任务未启动")
 
-    # 立刻运行一次任务
-    job_stock(sql_util, stock_sina_config)
-    job_forex(sql_util, forex_sina_config)
+    if args.stock:
+        stock_tag = "stock_sina"
+        stock_sql = f"SELECT * FROM t_task_bat_ctl WHERE uni_tag='{stock_tag}'"
+        stock_sina_config = sql_util.read_sql(database="forex",sql=stock_sql, format="dict")
+        # cron表达式
+        stock_cron = stock_sina_config["sched_tm"]
+        # 添加任务
+        scheduler.add_job(job_stock, CronTrigger.from_crontab(stock_cron), kwargs={'sql_util': sql_util, 'config': stock_sina_config}, id='stock_job')
+        # 立刻运行一次任务
+        job_stock(sql_util, stock_sina_config)
+    else:
+        logger.info("股票数据任务未启动")
+
     try:
         scheduler.start()
     except (KeyboardInterrupt, SystemExit):
