@@ -68,7 +68,7 @@ def wrap_forex(df, formatted_time, curr = "USD"):
     best_xh_buy_bank = best_xh_buy.loc[:,"bank_chi"].to_list()
     # 构建输出数据表
     df_out = pd.DataFrame({
-        "currency": ["curr"]
+        "currency": [curr]
         ,"best_xh_sell_bank": best_xh_sell_bank[0]
         ,"best_xh_sell": [xh_sell_min]
         ,"best_xh_buy_bank": best_xh_buy_bank[0]
