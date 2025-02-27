@@ -64,7 +64,7 @@ if __name__ == "__main__":
         forex_sina_config = sql_util.read_sql(database="forex",sql=forex_sql, format="dict")
         # cron表达式
         forex_cron = forex_sina_config["sched_tm"]
-        scheduler.add_job(job_forex, CronTrigger.from_crontab(forex_cron), kwargs={'sql_util': sql_util, 'config': forex_sina_config}, id='forex_job')
+        scheduler.add_job(job_forex, CronTrigger.from_crontab(forex_cron), kwargs={'sql_util': sql_util, 'config': forex_sina_config}, id='forex_job', misfire_grace_time=60)
         job_forex(sql_util, forex_sina_config)
     else:
         logger.info("外汇数据任务未启动")
@@ -76,7 +76,7 @@ if __name__ == "__main__":
         # cron表达式
         stock_cron = stock_sina_config["sched_tm"]
         # 添加任务
-        scheduler.add_job(job_stock, CronTrigger.from_crontab(stock_cron), kwargs={'sql_util': sql_util, 'config': stock_sina_config}, id='stock_job')
+        scheduler.add_job(job_stock, CronTrigger.from_crontab(stock_cron), kwargs={'sql_util': sql_util, 'config': stock_sina_config}, id='stock_job', misfire_grace_time=60)
         # 立刻运行一次任务
         job_stock(sql_util, stock_sina_config)
     else:
