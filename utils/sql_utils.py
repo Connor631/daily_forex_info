@@ -48,7 +48,15 @@ class sql_utils():
             connection.close()
     
     @logger.catch
-    def df_write_table(self, df, table_name, database):
+    def df_write_table(self, df, table_name, database, increm_cols=None):
+        """
+        将 DataFrame 写入数据库表，支持增量写入。
+        
+        :param df: 待写入的 DataFrame
+        :param table_name: 数据库表名
+        :param database: 数据库名
+        :param increm_cols: 用于增量判断的列名列表 如 ['A', 'B']，为空则直接追加写入
+        """
         engine = self.get_sqlalchemy_engine(database)
         # 获取表的列信息
         with engine.connect() as connection:
@@ -62,10 +70,32 @@ class sql_utils():
         # 保留表中存在的列
         df_clean = df[table_columns]
         try:
-            # 使用 engine.connect() 的上下文管理器来确保连接在使用后关闭
-            with engine.connect() as connection:
-                df_clean.to_sql(name=table_name, con=connection, if_exists='append', index=False)
-            logger.info(f"DataFrame successfully written to table {table_name}")
+            if increm_cols:
+                # 从目标表中读取增量判断列的数据
+                with engine.connect() as connection:
+                    query = f"SELECT {', '.join(increm_cols)} FROM {table_name}"
+                    existing_data = pd.read_sql(query, con=connection)
+
+                # 判断增量数据
+                if not existing_data.empty:
+                    # 使用 set_index 和 isin 判断增量
+                    is_new = ~df_clean.set_index(increm_cols).index.isin(
+                        existing_data.set_index(increm_cols).index
+                    )
+                    df_increm = df_clean.loc[is_new]
+                else:
+                    df_increm = df_clean
+            else:
+                # 如果未指定增量列，直接将所有数据作为增量
+                df_increm = df_clean
+            
+            # 写入增量数据
+            if not df_increm.empty:
+                with engine.connect() as connection:
+                    df_increm.to_sql(name=table_name, con=connection, if_exists='append', index=False)
+                logger.info(f"Incremental data successfully written to table {table_name}")
+            else:
+                logger.info(f"No incremental data to write to table {table_name}")
         except Exception as e:
             logger.error(f"Failed to write DataFrame to table {table_name}: {e}")
 

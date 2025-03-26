@@ -10,7 +10,6 @@ from pathlib import Path
 import argparse
 
 
-
 @logger.catch
 def job_forex(sql_util, config):
     if config["bat_stat"] == "active":
@@ -26,7 +25,7 @@ def job_forex(sql_util, config):
 @logger.catch
 def job_stock(sql_util, config):
     if config["bat_stat"] == "active":
-        stock_data_main(sql_util, config)
+        stock_data_main(sql_util)
     else:
         logger.info("股票数据任务被禁用")
     # 打印下次运行时间
