@@ -25,7 +25,8 @@ def job_forex(sql_util, config):
 @logger.catch
 def job_stock(sql_util, config):
     if config["bat_stat"] == "active":
-        stock_data_main(sql_util)
+        lst = config["res1"].split(config["url"])
+        stock_data_main(sql_util, lst)
     else:
         logger.info("股票数据任务被禁用")
     # 打印下次运行时间
