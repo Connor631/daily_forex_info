@@ -80,7 +80,10 @@ class MortgageLoan:
         df["progress in percent"] = df["Total Monthly Payment"].cumsum() / df["Total Monthly Payment"].sum() * 100
         return df.round(2)
 
-    def report_mortgage_loan(self, df):
+    def report_mortgage_loan(self, df=None):
+        if df is None:
+            df = self.calc_schedule()
+        # check if the df is empty
         df_paid = df[df["is_Paid"] == "1"]
         df_not_paid = df[df["is_Paid"] == "0"]
         df_this_year = df[df["is_This_Year"] == True]
@@ -143,7 +146,7 @@ class MortgageLoan:
         # e_msg["img_bytes"] = imgdata
         return e_msg
 
-if __name__ == "__main__":
+def mortgage_data_main(sql_util=None, config=None):
     # Example usage
     gjj_loan = 1097000
     bank_loan = 978000
@@ -162,12 +165,13 @@ if __name__ == "__main__":
         initial_gjj_rate=gjj_interest_rate,
         initial_bank_rate=LPR - minus_bp
     )
-
     df = mortgage_loan.calc_schedule(
         gjj_rate=gjj_interest_rate,
         bank_rate=LPR - minus_bp,
     )
-    out = mortgage_loan.report_mortgage_loan(df)
-    with open("mortgage_report.html", "w", encoding="utf-8") as f:
-        f.write(out['html'])
-    print(out)
+    sql_util.df_write_table(
+        df, table_name="t_mortgage_loan_schedule", database="forex"
+    )
+
+if __name__ == "__main__":
+    pass

@@ -1,6 +1,7 @@
 from loguru import logger
 from data_process.forex_data import forex_data_main
 from data_process.stock_data import stock_data_main
+from data_process.mort_loan import mortgage_data_main
 from utils.sql_utils import sql_utils
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -35,6 +36,17 @@ def job_stock(sql_util, config):
         next_run_time = job_instance.trigger.get_next_fire_time(None, datetime.now()).astimezone().strftime("%Y-%m-%d %H:%M:%S")
         logger.info(f"本次运行结束，下次运行时间：{next_run_time}")
 
+@logger.catch
+def job_mortgage(sql_util, config):
+    if config["bat_stat"] == "active":
+        mortgage_data_main(sql_util, config)
+    else:
+        logger.info("按揭数据任务被禁用")
+    # 打印下次运行时间
+    job_instance = scheduler.get_job('mortgage_job')
+    if job_instance:
+        next_run_time = job_instance.trigger.get_next_fire_time(None, datetime.now()).astimezone().strftime("%Y-%m-%d %H:%M:%S")
+        logger.info(f"本次运行结束，下次运行时间：{next_run_time}")
 
 if __name__ == "__main__":
     logger.info("start.....")
@@ -42,6 +54,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="数据服务控制。")
     parser.add_argument('--forex', type=int, default=1, help='外汇数据任务是否启动')
     parser.add_argument('--stock', type=int, default=1, help='股市数据任务是否启动')
+    parser.add_argument('--mortgage', type=int, default=1, help='按揭数据任务是否启动')
     args = parser.parse_args()
 
     # 检查并创建 logs 文件夹
@@ -81,6 +94,19 @@ if __name__ == "__main__":
         job_stock(sql_util, stock_sina_config)
     else:
         logger.info("股票数据任务未启动")
+
+    if args.mortgage:
+        mort_tag = "mortgage"
+        stock_sql = f"SELECT * FROM t_task_bat_ctl WHERE uni_tag='{mort_tag}'"
+        mortgage_config = sql_util.read_sql(database="forex",sql=stock_sql, format="dict")
+        # cron表达式
+        mortgage_cron = mortgage_config["sched_tm"]
+        # 添加任务
+        scheduler.add_job(job_mortgage, CronTrigger.from_crontab(mortgage_cron), kwargs={'sql_util': sql_util, 'config': mortgage_config}, id='mortgage_job', misfire_grace_time=60)
+        # 立刻运行一次任务
+        job_mortgage(sql_util, mortgage_config)
+    else:
+        logger.info("按揭数据任务未启动")
 
     try:
         scheduler.start()
