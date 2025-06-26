@@ -2,6 +2,7 @@ from loguru import logger
 import pytz
 from datetime import datetime
 import akshare as ak
+import time
 
 
 # 设置时区为北京时间
@@ -10,6 +11,7 @@ tz = pytz.timezone('Asia/Shanghai')
 
 @logger.catch
 def get_stock_data(symbol):
+    time.sleep(10)  # 避免请求过于频繁
     return ak.index_us_stock_sina(symbol)
 
 
@@ -29,6 +31,7 @@ def get_stock_usa():
     return inx, dji, ndx, ixic
 
 def get_stock_global_em(symbol):
+    time.sleep(5)  # 避免请求过于频繁
     index_global_hist_em_df = ak.index_global_hist_em(symbol)
     index_global_hist_em_df.rename(
         columns={
