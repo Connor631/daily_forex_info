@@ -170,7 +170,7 @@ def mortgage_data_main(sql_util=None, config=None):
         bank_rate=LPR - minus_bp,
     )
     sql_util.df_write_table(
-        df, table_name="t_mortgage_loan_schedule", database="forex"
+        df, table_name="t_mortgage_loan_schedule", database="forex", replace=True
     )
 
 if __name__ == "__main__":

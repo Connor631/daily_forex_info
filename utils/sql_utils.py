@@ -48,7 +48,7 @@ class sql_utils():
             connection.close()
     
     @logger.catch
-    def df_write_table(self, df, table_name, database, increm_cols=None):
+    def df_write_table(self, df, table_name, database, increm_cols=None, replace=False):
         """
         将 DataFrame 写入数据库表，支持增量写入。
         
@@ -63,13 +63,22 @@ class sql_utils():
             table_columns = connection.execute(text(f"SHOW COLUMNS FROM {table_name}")).fetchall()
             table_columns = [col[0] for col in table_columns]
         
-        # 添加缺失的列
-        for col in table_columns:
-            if col not in df.columns:
-                df[col] = None
-        # 保留表中存在的列
-        df_clean = df[table_columns]
+        # 需要数据库自动生成默认值的字段
+        auto_cols = {"id", "create_date", "mod_date"}
+        # 只补齐非自动生成的字段
+        missing_cols = [col for col in table_columns if col not in df.columns and col not in auto_cols]
+        df[missing_cols] = None
+        # 只保留DataFrame已有的列和非自动生成的列
+        final_cols = [col for col in table_columns if col not in auto_cols]
+        df_clean = df[final_cols]
         try:
+            if replace:
+                with engine.connect() as connection:
+                    connection.execute(text(f"TRUNCATE TABLE {table_name}"))  # 清空表但保留结构
+                with engine.connect() as connection:
+                    df_clean.to_sql(name=table_name, con=connection, if_exists='append', index=False)
+                    logger.info(f"Replacement data successfully written to table {table_name}")
+                return
             if increm_cols:
                 # 从目标表中读取增量判断列的数据
                 with engine.connect() as connection:
